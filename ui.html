@@ -1,0 +1,142 @@
+<div style="height: auto; width: auto">
+  <!-- <div>
+    <label for="url">imo-commponent reposity url:</label>
+    <br />
+    <input
+      type="text"
+      id="url"
+      name="url"
+      value="https://git.sysop.bigo.sg/imo-android/libraries/imocomponents"
+      required
+    />
+  </div>
+  <div>
+    <label for="branch">Branch:</label>
+    <br />
+    <input type="text" id="branch" name="branch" value="master" required />
+  </div>
+  <br />
+  <div>
+    <label for="username">Gitlab Username:</label>
+    <br />
+    <input type="text" id="username" name="username" required />
+  </div>
+
+  <div>
+    <label for="password">Gitlab Password:</label>
+    <br />
+    <input type="password" id="password" name="password" required />
+  </div> -->
+
+  <div>新增和删除需要导出两份文件，修改只需要tokens文件，不需要attrs文件</div>
+
+  <br />
+  <input type="button" id="btn_preview_attrs" value="preview color attrs" />
+  <input type="button" id="btn_copy_attrs" value="copy color attrs" />
+  <input type="button" id="btn_download_attrs" value="download color attrs" />
+  <div id="preview_attrs"></div>
+  <br />
+
+  <div>
+    <label for="modes">需要导出的列,无就是全选,间隔(,):</label>
+    <br />
+    <input type="text" id="modes" name="modes" value="light,dark"/>
+  </div>
+  <input type="button" id="btn_preview_tokens" value="preview color token" />
+  <input type="button" id="btn_copy_tokens" value="copy color token" />
+  <input type="button" id="btn_download_tokens" value="download color tokens" />
+  <div id="preview_tokens"></div>
+
+  <!-- <br />
+  <input type="button" id="export" value="export" /> -->
+</div>
+<script>
+  document.getElementById("btn_preview_attrs").onclick = () => {
+    parent.postMessage({ pluginMessage: { type: "preview_attrs" } }, "*");
+  };
+
+  document.getElementById("btn_preview_tokens").onclick = () => {
+    parent.postMessage({ pluginMessage: { type: "preview_tokens" } }, "*");
+  };
+  const unsecuredCopyToClipboard = (text) => {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    try {
+      document.execCommand("copy");
+    } catch (err) {
+      console.error("Unable to copy to clipboard", err);
+    }
+    document.body.removeChild(textArea);
+  };
+
+  /**
+   * Copies the text passed as param to the system clipboard
+   * Check if using HTTPS and navigator.clipboard is available
+   * Then uses standard clipboard API, otherwise uses fallback
+   */
+  const copyToClipboard = (content) => {
+    if (window.isSecureContext && navigator.clipboard) {
+      navigator.clipboard.writeText(content);
+    } else {
+      unsecuredCopyToClipboard(content);
+    }
+  };
+
+  function writeToTextFile(content, fileName) {
+    const blob = new Blob([content], { type: "text/plain" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  }
+
+  document.getElementById("btn_copy_attrs").onclick = () => {
+    copyToClipboard(document.getElementById("preview_attrs").innerText);
+    alert("复制成功！");
+    writeToTextFile(
+      document.getElementById("preview_attrs").innerText,
+      "biui_color_token.xml"
+    );
+  };
+
+  document.getElementById("btn_download_attrs").onclick = () => {
+    parent.postMessage({ pluginMessage: { type: "download_attrs" } }, "*");
+  };
+
+  document.getElementById("btn_copy_tokens").onclick = () => {
+    copyToClipboard(document.getElementById("preview_tokens").innerText);
+    alert("复制成功！");
+    writeToTextFile(
+      document.getElementById("preview_tokens").innerText,
+      "biui_token_attrs.xml"
+    );
+  };
+
+  document.getElementById("modes").onchange = () =>{
+    parent.postMessage({ pluginMessage: { type: "modes_change", data:document.getElementById("modes").value } }, "*");
+  }
+
+  document.getElementById("btn_download_tokens").onclick = () => {
+    parent.postMessage({ pluginMessage: { type: "download_tokens" } }, "*");
+  };
+
+  onmessage = (event) => {
+    let type = event.data.pluginMessage.type;
+    if (type === "preview_tokens_str_show") {
+      document.getElementById("preview_tokens").innerText =
+        event.data.pluginMessage.data;
+    } else if (type === "preview_attrs_str_show") {
+      document.getElementById("preview_attrs").innerText =
+        event.data.pluginMessage.data;
+    } else if (type === "download_attrs_content_get") {
+      writeToTextFile(event.data.pluginMessage.data, "biui_token_attrs.xml");
+    } else if (type === "download_tokens_content_get") {
+      writeToTextFile(event.data.pluginMessage.data, "biui_color_token.xml");
+    }
+  };
+</script>
